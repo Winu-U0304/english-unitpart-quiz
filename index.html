@@ -176,6 +176,7 @@
             justify-content: center;
             gap: 10px;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -201,6 +202,14 @@
             background-color: #626c6d;
         }
 
+        .btn-review {
+            background-color: #e67e22; /* 間違い見直し用オレンジ */
+            display: none;
+        }
+        .btn-review:hover {
+            background-color: #d35400;
+        }
+
         .tip {
             text-align: center;
             font-size: 0.8rem;
@@ -213,7 +222,7 @@
 
     <div class="container">
         <h1>英語単語暗記トレーニング</h1>
-        <div class="subtitle">モードを選んでテストを開始してください。</div>
+        <div class="subtitle" id="app-subtitle">モードを選んでテストを開始してください。</div>
 
         <!-- モード切替タブ -->
         <div class="tabs">
@@ -227,7 +236,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>意味 (Japanese)</th>
+                        <th id="th-ja">意味 (Japanese)</th>
                         <th>英単語 (English)</th>
                     </tr>
                 </thead>
@@ -239,9 +248,10 @@
 
         <div class="tip" id="mode-tip">※ 暗記モード：黒い付箋の部分をタップすると答えが表示されます。</div>
 
-        <!-- やり直し・チェックボタン -->
+        <!-- やり直し・チェック・復習ボタン -->
         <div class="btn-container">
-            <button class="btn btn-secondary" onclick="resetApp()">リセット / やり直す</button>
+            <button class="btn btn-secondary" onclick="resetApp()">リセット / 全てやり直す</button>
+            <button class="btn btn-review" id="review-btn" onclick="startReviewMode()">間違えた問題のみ復習</button>
             <button class="btn" id="check-btn" style="display:none;" onclick="checkAllAnswers()">答え合わせをする</button>
         </div>
     </div>
@@ -263,14 +273,21 @@
         // =========================================================================
 
         let currentMode = 'memorize';
+        let activeWordList = [...wordList]; // 現在表示しているリスト（通常 or 間違いのみ）
+        let isReviewOnly = false;
 
         window.onload = function() {
+            activeWordList = [...wordList];
             renderTable();
         };
 
         function switchMode(mode) {
             currentMode = mode;
+            isReviewOnly = false;
+            activeWordList = [...wordList];
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('review-btn').style.display = 'none';
+            document.getElementById('app-subtitle').innerText = "モードを選んでテストを開始してください。";
 
             if (mode === 'memorize') {
                 document.querySelectorAll('.tab-btn')[0].classList.add('active');
@@ -278,7 +295,7 @@
                 document.getElementById('check-btn').style.display = 'none';
             } else if (mode === 'write') {
                 document.querySelectorAll('.tab-btn')[1].classList.add('active');
-                document.getElementById('mode-tip').innerText = "※ 記入モード：空欄に英単語を入力し、「答え合わせをする」を押してください。";
+                document.getElementById('mode-tip').innerText = "※ 記入モード：入力後にEnterキーを押すと、次の欄へスムーズに移動できます。";
                 document.getElementById('check-btn').style.display = 'inline-block';
             } else if (mode === 'answer') {
                 document.querySelectorAll('.tab-btn')[2].classList.add('active');
@@ -293,7 +310,7 @@
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
 
-            wordList.forEach((item) => {
+            activeWordList.forEach((item, index) => {
                 const tr = document.createElement('tr');
 
                 // 意味カラム
@@ -317,8 +334,25 @@
                     input.type = 'text';
                     input.className = 'quiz-input';
                     input.dataset.answer = item.word;
+                    input.dataset.index = index;
                     input.autocomplete = 'off';
                     input.autocapitalize = 'off';
+
+                    // 💡 Enterキーを押したときの挙動（次の入力欄にジャンプ、最後なら答え合わせ）
+                    input.addEventListener('keydown', function(event) {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            const inputs = document.querySelectorAll('.quiz-input');
+                            const currentIndex = Array.from(inputs).indexOf(this);
+                            
+                            if (currentIndex < inputs.length - 1) {
+                                inputs[currentIndex + 1].focus(); // 次の入力欄へ移動
+                            } else {
+                                checkAllAnswers(); // 最後の欄なら自動で答え合わせ
+                            }
+                        }
+                    });
+
                     tdWord.appendChild(input);
                 }
 
@@ -330,23 +364,58 @@
         // 記入モードの答え合わせ処理
         function checkAllAnswers() {
             const inputs = document.querySelectorAll('.quiz-input');
+            let incorrectList = [];
+            let correctCount = 0;
+
             inputs.forEach(input => {
                 const userVal = input.value.trim().toLowerCase();
                 const correctVal = input.dataset.answer.toLowerCase();
+                const originalIndex = input.dataset.index;
 
                 if (userVal === correctVal) {
                     input.classList.remove('incorrect-input');
                     input.classList.add('correct-input');
+                    correctCount++;
                 } else {
                     input.classList.remove('correct-input');
                     input.classList.add('incorrect-input');
                     input.placeholder = `正: ${input.dataset.answer}`;
+                    // 間違えた単語をストック
+                    incorrectList.push(activeWordList[originalIndex]);
                 }
             });
+
+            // 間違えた問題がある場合、復習ボタンを表示
+            const reviewBtn = document.getElementById('review-btn');
+            if (incorrectList.length > 0) {
+                reviewBtn.style.display = 'inline-block';
+                reviewBtn.innerText = `間違えた問題のみ復習 (${incorrectList.length}問)`;
+                window.tempIncorrectList = incorrectList;
+            } else {
+                reviewBtn.style.display = 'none';
+                if (activeWordList.length > 0 && correctCount === activeWordList.length) {
+                    alert("全問正解おめでとうございます！🎉素晴らしいです！");
+                }
+            }
+        }
+
+        // 間違えた問題のみ復習モードを開始
+        function startReviewMode() {
+            if (window.tempIncorrectList && window.tempIncorrectList.length > 0) {
+                activeWordList = [...window.tempIncorrectList];
+                isReviewOnly = true;
+                document.getElementById('app-subtitle').innerText = "【復習モード】間違えた問題に再挑戦中！";
+                document.getElementById('review-btn').style.display = 'none';
+                renderTable();
+            }
         }
 
         // リセットボタン
         function resetApp() {
+            activeWordList = [...wordList];
+            isReviewOnly = false;
+            document.getElementById('app-subtitle').innerText = "モードを選んでテストを開始してください。";
+            document.getElementById('review-btn').style.display = 'none';
             renderTable();
         }
     </script>
