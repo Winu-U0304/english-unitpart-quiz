@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英語暗記トレーニング クイズ</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #2980b9;
+            --bg-color: #f4f6f7;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --border-color: #dcdde1;
+            --mask-bg: #2c3e50; /* 付箋・隠す部分の色 */
+        }
+
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 550px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            border-top: 5px solid var(--primary);
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: var(--primary);
+            letter-spacing: 0.03em;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        /* モード切替タブ */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            background: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: #555;
+            border-radius: 4px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* テーブルデザイン */
+        .table-container {
+            max-width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            border-right: 1px solid #eee;
+        }
+
+        th:last-child, td:last-child {
+            border-right: none;
+        }
+
+        th {
+            background-color: #f1f2f6;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        td:first-child {
+            text-align: left;
+            font-weight: bold;
+            color: #333;
+            width: 45%;
+        }
+
+        td:last-child {
+            width: 55%;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* 暗記モードのマスク（付箋）スタイル */
+        .mask-cell {
+            background-color: var(--mask-bg);
+            color: var(--mask-bg);
+            cursor: pointer;
+            user-select: none;
+            border-radius: 4px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .mask-cell.revealed {
+            background-color: #eaf2f8;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* 記入モードの入力欄 */
+        .quiz-input {
+            width: 90%;
+            padding: 8px;
+            font-size: 0.95rem;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .quiz-input.correct-input {
+            background-color: #d4efdf;
+            color: #196f3d;
+            font-weight: bold;
+            border-color: #27ae60;
+        }
+        .quiz-input.incorrect-input {
+            background-color: #fadbd8;
+            color: #78281f;
+            border-color: #c0392b;
+        }
+
+        /* 操作ボタン */
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #2471a3;
+        }
+
+        .btn-secondary {
+            background-color: #7f8c8d;
+        }
+        .btn-secondary:hover {
+            background-color: #626c6d;
+        }
+
+        .tip {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>英語単語暗記トレーニング</h1>
+        <div class="subtitle">モードを選んでテストを開始してください。</div>
+
+        <!-- モード切替タブ -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchMode('memorize')">暗記モード</button>
+            <button class="tab-btn" onclick="switchMode('write')">記入モード</button>
+            <button class="tab-btn" onclick="switchMode('answer')">単語一覧表</button>
+        </div>
+
+        <!-- メインの表エリア -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>意味 (Japanese)</th>
+                        <th>英単語 (English)</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- JavaScriptで動的に生成されます -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tip" id="mode-tip">※ 暗記モード：黒い付箋の部分をタップすると答えが表示されます。</div>
+
+        <!-- やり直し・チェックボタン -->
+        <div class="btn-container">
+            <button class="btn btn-secondary" onclick="resetApp()">リセット / やり直す</button>
+            <button class="btn" id="check-btn" style="display:none;" onclick="checkAllAnswers()">答え合わせをする</button>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // 📝 【単語データ（表形式）】
+        // 自由に行を追加・編集していくことで、いつでも内容をすばやく更新できます！
+        // =========================================================================
+        const wordList = [
+            { ja: "りんご",     word: "apple" },
+            { ja: "バナナ",     word: "banana" },
+            { ja: "コンピューター", word: "computer" },
+            { ja: "辞書",       word: "dictionary" },
+            { ja: "教育",       word: "education" }
+            // 💡追加したいときは、カンマで区切って下のように行を増やしてください：
+            // { ja: "日本語の意味", word: "english" },
+        ];
+        // =========================================================================
+
+        let currentMode = 'memorize';
+
+        window.onload = function() {
+            renderTable();
+        };
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            if (mode === 'memorize') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('mode-tip').innerText = "※ 暗記モード：黒い付箋の部分をタップすると答えが表示されます。";
+                document.getElementById('check-btn').style.display = 'none';
+            } else if (mode === 'write') {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('mode-tip').innerText = "※ 記入モード：空欄に英単語を入力し、「答え合わせをする」を押してください。";
+                document.getElementById('check-btn').style.display = 'inline-block';
+            } else if (mode === 'answer') {
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                document.getElementById('mode-tip').innerText = "※ 単語一覧モード：すべての答えが表示された状態です。";
+                document.getElementById('check-btn').style.display = 'none';
+            }
+            renderTable();
+        }
+
+        // テーブルを描画する関数
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            wordList.forEach((item) => {
+                const tr = document.createElement('tr');
+
+                // 意味カラム
+                const tdJa = document.createElement('td');
+                tdJa.innerText = item.ja;
+                tr.appendChild(tdJa);
+
+                // 英単語カラム
+                const tdWord = document.createElement('td');
+
+                if (currentMode === 'answer') {
+                    tdWord.innerText = item.word;
+                } else if (currentMode === 'memorize') {
+                    tdWord.className = 'mask-cell';
+                    tdWord.innerText = item.word;
+                    tdWord.onclick = function() {
+                        this.classList.toggle('revealed');
+                    };
+                } else if (currentMode === 'write') {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'quiz-input';
+                    input.dataset.answer = item.word;
+                    input.autocomplete = 'off';
+                    input.autocapitalize = 'off';
+                    tdWord.appendChild(input);
+                }
+
+                tr.appendChild(tdWord);
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 記入モードの答え合わせ処理
+        function checkAllAnswers() {
+            const inputs = document.querySelectorAll('.quiz-input');
+            inputs.forEach(input => {
+                const userVal = input.value.trim().toLowerCase();
+                const correctVal = input.dataset.answer.toLowerCase();
+
+                if (userVal === correctVal) {
+                    input.classList.remove('incorrect-input');
+                    input.classList.add('correct-input');
+                } else {
+                    input.classList.remove('correct-input');
+                    input.classList.add('incorrect-input');
+                    input.placeholder = `正: ${input.dataset.answer}`;
+                }
+            });
+        }
+
+        // リセットボタン
+        function resetApp() {
+            renderTable();
+        }
+    </script>
+</body>
+</html>
