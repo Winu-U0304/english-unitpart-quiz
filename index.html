@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英語暗記トレーニング クイズ</title>
+    <title>英語小テスト対策トレーニング</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -12,7 +12,7 @@
             --card-bg: #ffffff;
             --text-main: #333333;
             --border-color: #dcdde1;
-            --mask-bg: #2c3e50; /* 付箋・隠す部分の色 */
+            --mask-bg: #2c3e50;
         }
 
         body {
@@ -30,7 +30,7 @@
 
         .container {
             width: 100%;
-            max-width: 550px;
+            max-width: 600px;
             background: var(--card-bg);
             padding: 20px;
             border-radius: 8px;
@@ -40,12 +40,11 @@
         }
 
         h1 {
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             text-align: center;
             margin-top: 0;
             margin-bottom: 5px;
             color: var(--primary);
-            letter-spacing: 0.03em;
         }
 
         .subtitle {
@@ -55,24 +54,25 @@
             margin-bottom: 20px;
         }
 
-        /* モード切替タブ */
         .tabs {
             display: flex;
-            gap: 5px;
+            gap: 4px;
             margin-bottom: 20px;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 10px;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .tab-btn {
             flex: 1;
-            padding: 8px 10px;
+            min-width: 85px;
+            padding: 8px 6px;
             border: 1px solid var(--border-color);
             background: #fff;
             cursor: pointer;
             font-weight: bold;
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             color: #555;
             border-radius: 4px;
             transition: all 0.2s;
@@ -85,7 +85,6 @@
             border-color: var(--primary);
         }
 
-        /* テーブルデザイン */
         .table-container {
             max-width: 100%;
             overflow-x: auto;
@@ -128,11 +127,6 @@
             width: 55%;
         }
 
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        /* 暗記モードのマスク（付箋）スタイル */
         .mask-cell {
             background-color: var(--mask-bg);
             color: var(--mask-bg);
@@ -148,7 +142,6 @@
             font-weight: bold;
         }
 
-        /* 記入モードの入力欄 */
         .quiz-input {
             width: 90%;
             padding: 8px;
@@ -157,6 +150,7 @@
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
+            ime-mode: disabled;
         }
         .quiz-input.correct-input {
             background-color: #d4efdf;
@@ -170,7 +164,89 @@
             border-color: #c0392b;
         }
 
-        /* 操作ボタン */
+        .scramble-section {
+            display: none;
+        }
+        .scramble-card {
+            background: #fafbfc;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .scramble-question {
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: var(--primary);
+            font-size: 0.95rem;
+        }
+        .hint-words {
+            font-size: 0.78rem;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            background: #f1f2f6;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        /* 💡 ドラッグ＆ドロップ用のエリアデザイン */
+        .answer-slot-area, .piece-pool-area {
+            min-height: 48px;
+            border: 2px dashed #cbd5e1;
+            background: #fff;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px;
+            margin-bottom: 10px;
+            transition: background 0.2s;
+        }
+        .answer-slot-area {
+            border-color: var(--accent);
+            background: #f8fafc;
+        }
+        .piece-pool-area {
+            border-color: #cbd5e1;
+        }
+
+        .word-piece {
+            background: #e2e8f0;
+            color: #1e293b;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: grab;
+            font-size: 0.9rem;
+            font-weight: bold;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #cbd5e1;
+            touch-action: none; /* スマホでのスクロール干渉を防ぐ */
+        }
+        .word-piece:active {
+            cursor: grabbing;
+        }
+        .word-piece.dragging {
+            opacity: 0.4;
+        }
+
+        .placeholder-text {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            pointer-events: none;
+            width: 100%;
+            text-align: center;
+        }
+
+        .scramble-result {
+            margin-top: 8px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .scramble-result.correct { color: #16a34a; }
+        .scramble-result.incorrect { color: #dc2626; }
+
         .btn-container {
             display: flex;
             justify-content: center;
@@ -203,7 +279,7 @@
         }
 
         .btn-review {
-            background-color: #e67e22; /* 間違い見直し用オレンジ */
+            background-color: #e67e22;
             display: none;
         }
         .btn-review:hover {
@@ -221,104 +297,139 @@
 <body>
 
     <div class="container">
-        <h1>英語単語暗記トレーニング</h1>
-        <div class="subtitle" id="app-subtitle">モードを選んでテストを開始してください。</div>
+        <h1>英語小テスト対策トレーニング</h1>
+        <div class="subtitle" id="app-subtitle">学習モードを選択し、演習を開始してください。</div>
 
-        <!-- モード切替タブ -->
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchMode('memorize')">暗記モード</button>
-            <button class="tab-btn" onclick="switchMode('write')">記入モード</button>
-            <button class="tab-btn" onclick="switchMode('answer')">単語一覧表</button>
+            <button class="tab-btn active" onclick="switchMode('memorize')">単語:暗記</button>
+            <button class="tab-btn" onclick="switchMode('write')">単語:記入</button>
+            <button class="tab-btn" onclick="switchMode('answer')">単語一覧</button>
+            <button class="tab-btn" onclick="switchMode('scramble')">並び替え</button>
         </div>
 
-        <!-- メインの表エリア -->
-        <div class="table-container">
+        <div class="table-container" id="table-view-container">
             <table>
                 <thead>
                     <tr>
-                        <th id="th-ja">意味 (Japanese)</th>
+                        <th>意味 (Japanese)</th>
                         <th>英単語 (English)</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
-                    <!-- JavaScriptで動的に生成されます -->
                 </tbody>
             </table>
         </div>
 
-        <div class="tip" id="mode-tip">※ 暗記モード：黒い付箋の部分をタップすると答えが表示されます。</div>
+        <div class="scramble-section" id="scramble-section">
+            <div id="scramble-cards-container">
+            </div>
+        </div>
 
-        <!-- やり直し・チェック・復習ボタン -->
+        <div class="tip" id="mode-tip">※ 該当の場所をタップすると答えが表示されます。</div>
+
         <div class="btn-container">
-            <button class="btn btn-secondary" onclick="resetApp()">リセット / 全てやり直す</button>
-            <button class="btn btn-review" id="review-btn" onclick="startReviewMode()">間違えた問題のみ復習</button>
+            <button class="btn btn-secondary" onclick="resetApp()">リセット / やり直す</button>
+            <button class="btn btn-review" id="review-btn" onclick="startReviewMode()">間違えた問題のみ復習する</button>
             <button class="btn" id="check-btn" style="display:none;" onclick="checkAllAnswers()">答え合わせをする</button>
         </div>
     </div>
 
     <script>
-        // =========================================================================
-        // 📝 【単語データ（表形式）】
-        // 自由に行を追加・編集していくことで、いつでも内容をすばやく更新できます！
-        // =========================================================================
         const wordList = [
-            { ja: "りんご",     word: "apple" },
-            { ja: "バナナ",     word: "banana" },
-            { ja: "コンピューター", word: "computer" },
-            { ja: "辞書",       word: "dictionary" },
-            { ja: "教育",       word: "education" }
-            // 💡追加したいときは、カンマで区切って下のように行を増やしてください：
-            // { ja: "日本語の意味", word: "english" },
+            { ja: "びん、ボトル",     word: "bottle" },
+            { ja: "…にさわる、ふれる",     word: "touch" },
+            { ja: "製品",             word: "product" }
         ];
-        // =========================================================================
+
+        const scrambleList = [
+            { 
+                ja: "① 私の母はチョコレートケーキの作り方を知っています。", 
+                hint: "how / my / mother / to / knows / chocolate / cake / make / .",
+                words: ["my", "mother", "knows", "how", "to", "make", "chocolate", "cake", "."] 
+            },
+            { 
+                ja: "② 私は次に何をすればよいかわかりません。", 
+                hint: "don't / what / I / do / next / know / to / .",
+                words: ["I", "don't", "know", "what", "to", "do", "next", "."] 
+            },
+            { 
+                ja: "③ あなたは、チケットをどこで買えばよいか知っていますか。", 
+                hint: "a / ticket / you / do / to / buy / where / know / ?",
+                words: ["Do", "you", "know", "where", "to", "buy", "a", "ticket", "?"] 
+            }
+        ];
 
         let currentMode = 'memorize';
-        let activeWordList = [...wordList]; // 現在表示しているリスト（通常 or 間違いのみ）
-        let isReviewOnly = false;
+        let activeWordList = [...wordList];
+        let activeScrambleList = JSON.parse(JSON.stringify(scrambleList));
 
         window.onload = function() {
-            activeWordList = [...wordList];
-            renderTable();
+            resetAppData();
+            switchMode('memorize');
         };
+
+        function resetAppData() {
+            activeWordList = [...wordList];
+            activeScrambleList = JSON.parse(JSON.stringify(scrambleList));
+            activeScrambleList.forEach(item => {
+                item.shuffled = item.words.map((w, i) => ({ id: i, text: w }));
+                for (let i = item.shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [item.shuffled[i], item.shuffled[j]] = [item.shuffled[j], item.shuffled[i]];
+                }
+                item.userAnswer = [];
+            });
+        }
 
         function switchMode(mode) {
             currentMode = mode;
-            isReviewOnly = false;
-            activeWordList = [...wordList];
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById('review-btn').style.display = 'none';
-            document.getElementById('app-subtitle').innerText = "モードを選んでテストを開始してください。";
 
-            if (mode === 'memorize') {
-                document.querySelectorAll('.tab-btn')[0].classList.add('active');
-                document.getElementById('mode-tip').innerText = "※ 暗記モード：黒い付箋の部分をタップすると答えが表示されます。";
-                document.getElementById('check-btn').style.display = 'none';
-            } else if (mode === 'write') {
-                document.querySelectorAll('.tab-btn')[1].classList.add('active');
-                document.getElementById('mode-tip').innerText = "※ 記入モード：入力後にEnterキーを押すと、次の欄へスムーズに移動できます。";
-                document.getElementById('check-btn').style.display = 'inline-block';
-            } else if (mode === 'answer') {
-                document.querySelectorAll('.tab-btn')[2].classList.add('active');
-                document.getElementById('mode-tip').innerText = "※ 単語一覧モード：すべての答えが表示された状態です。";
-                document.getElementById('check-btn').style.display = 'none';
+            const tableContainer = document.getElementById('table-view-container');
+            const scrambleSection = document.getElementById('scramble-section');
+            const checkBtn = document.getElementById('check-btn');
+
+            if (mode === 'scramble') {
+                document.querySelectorAll('.tab-btn')[3].classList.add('active');
+                tableContainer.style.display = 'none';
+                scrambleSection.style.display = 'block';
+                checkBtn.style.display = 'inline-block';
+                document.getElementById('mode-tip').innerText = "※ ピースをドラッグ＆ドロップして自由に並び替えてください。（先頭は自動大文字化）";
+                document.getElementById('app-subtitle').innerText = "【並び替え問題対策】";
+                renderScramble();
+            } else {
+                tableContainer.style.display = 'block';
+                scrambleSection.style.display = 'none';
+                document.getElementById('app-subtitle').innerText = "【単語テスト対策】";
+
+                if (mode === 'memorize') {
+                    document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                    document.getElementById('mode-tip').innerText = "※ 黒い部分をタップすると英単語が確認できます。";
+                    checkBtn.style.display = 'none';
+                } else if (mode === 'write') {
+                    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                    document.getElementById('mode-tip').innerText = "※ 入力欄は自動で半角英字モードになります。Enterキーで次の入力欄へ移動します。";
+                    checkBtn.style.display = 'inline-block';
+                } else if (mode === 'answer') {
+                    document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                    document.getElementById('mode-tip').innerText = "※ すべての答えの一覧です。";
+                    checkBtn.style.display = 'none';
+                }
+                renderTable();
             }
-            renderTable();
         }
 
-        // テーブルを描画する関数
         function renderTable() {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
 
             activeWordList.forEach((item, index) => {
                 const tr = document.createElement('tr');
-
-                // 意味カラム
                 const tdJa = document.createElement('td');
                 tdJa.innerText = item.ja;
                 tr.appendChild(tdJa);
 
-                // 英単語カラム
                 const tdWord = document.createElement('td');
 
                 if (currentMode === 'answer') {
@@ -336,87 +447,345 @@
                     input.dataset.answer = item.word;
                     input.dataset.index = index;
                     input.autocomplete = 'off';
-                    input.autocapitalize = 'off';
+                    input.autocapitalize = 'none';
+                    input.setAttribute('autocorrect', 'off');
+                    input.setAttribute('spellcheck', 'false');
+                    input.setAttribute('inputmode', 'latin');
 
-                    // 💡 Enterキーを押したときの挙動（次の入力欄にジャンプ、最後なら答え合わせ）
                     input.addEventListener('keydown', function(event) {
                         if (event.key === 'Enter') {
                             event.preventDefault();
                             const inputs = document.querySelectorAll('.quiz-input');
                             const currentIndex = Array.from(inputs).indexOf(this);
-                            
                             if (currentIndex < inputs.length - 1) {
-                                inputs[currentIndex + 1].focus(); // 次の入力欄へ移動
+                                inputs[currentIndex + 1].focus();
                             } else {
-                                checkAllAnswers(); // 最後の欄なら自動で答え合わせ
+                                checkAllAnswers();
                             }
                         }
                     });
-
                     tdWord.appendChild(input);
                 }
-
                 tr.appendChild(tdWord);
                 tbody.appendChild(tr);
             });
         }
 
-        // 記入モードの答え合わせ処理
-        function checkAllAnswers() {
-            const inputs = document.querySelectorAll('.quiz-input');
-            let incorrectList = [];
-            let correctCount = 0;
+        function renderScramble() {
+            const container = document.getElementById('scramble-cards-container');
+            container.innerHTML = '';
 
-            inputs.forEach(input => {
-                const userVal = input.value.trim().toLowerCase();
-                const correctVal = input.dataset.answer.toLowerCase();
-                const originalIndex = input.dataset.index;
+            activeScrambleList.forEach((item, qIndex) => {
+                const card = document.createElement('div');
+                card.className = 'scramble-card';
 
-                if (userVal === correctVal) {
-                    input.classList.remove('incorrect-input');
-                    input.classList.add('correct-input');
-                    correctCount++;
-                } else {
-                    input.classList.remove('correct-input');
-                    input.classList.add('incorrect-input');
-                    input.placeholder = `正: ${input.dataset.answer}`;
-                    // 間違えた単語をストック
-                    incorrectList.push(activeWordList[originalIndex]);
+                const qTitle = document.createElement('div');
+                qTitle.className = 'scramble-question';
+                qTitle.innerText = item.ja;
+                card.appendChild(qTitle);
+
+                const hintDiv = document.createElement('div');
+                hintDiv.className = 'hint-words';
+                hintDiv.innerText = `テストのヒント: ${item.hint}`;
+                card.appendChild(hintDiv);
+
+                const slotArea = document.createElement('div');
+                slotArea.className = 'answer-slot-area';
+                slotArea.dataset.type = 'answer';
+                slotArea.dataset.qIndex = qIndex;
+
+                const poolArea = document.createElement('div');
+                poolArea.className = 'piece-pool-area';
+                poolArea.dataset.type = 'pool';
+                poolArea.dataset.qIndex = qIndex;
+
+                function updatePieces() {
+                    slotArea.innerHTML = '';
+                    poolArea.innerHTML = '';
+
+                    if (item.userAnswer.length === 0) {
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'placeholder-text';
+                        placeholder.innerText = "ここにピースをドラッグ＆ドロップ";
+                        slotArea.appendChild(placeholder);
+                    } else {
+                        item.userAnswer.forEach((wordObj, ansIdx) => {
+                            const piece = createPieceElement(wordObj, 'answer', qIndex, ansIdx);
+                            slotArea.appendChild(piece);
+                        });
+                    }
+
+                    item.shuffled.forEach((wordObj, poolIdx) => {
+                        const piece = createPieceElement(wordObj, 'pool', qIndex, poolIdx);
+                        poolArea.appendChild(piece);
+                    });
+                }
+
+                setupDropZone(slotArea, item);
+                setupDropZone(poolArea, item);
+
+                updatePieces();
+                card.appendChild(slotArea);
+                card.appendChild(poolArea);
+
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'scramble-result';
+                resultDiv.id = `scramble-result-${qIndex}`;
+                card.appendChild(resultDiv);
+
+                container.appendChild(card);
+            });
+        }
+
+        // 💡 ドラッグ可能なピース要素の生成（スマホのタッチ対応込み）
+        function createPieceElement(wordObj, containerType, qIndex, itemIndex) {
+            const piece = document.createElement('div');
+            piece.className = 'word-piece';
+            piece.draggable = true;
+
+            let displayText = wordObj.text;
+            if (containerType === 'answer' && itemIndex === 0) {
+                displayText = displayText.charAt(0).toUpperCase() + displayText.slice(1);
+            }
+            piece.innerText = displayText;
+
+            // データの紐付け
+            piece.dataset.qIndex = qIndex;
+            piece.dataset.container = containerType;
+            piece.dataset.index = itemIndex;
+            piece.dataset.id = wordObj.id;
+
+            // PC用ドラッグイベント
+            piece.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify({
+                    qIndex: qIndex,
+                    from: containerType,
+                    index: itemIndex,
+                    id: wordObj.id
+                }));
+                setTimeout(() => piece.classList.add('dragging'), 0);
+            });
+
+            piece.addEventListener('dragend', () => {
+                piece.classList.remove('dragging');
+            });
+
+            // スマホ・タブレット用タッチ移動対応（簡易ドラッグエミュレート）
+            let touchX = 0, touchY = 0, clone = null;
+            piece.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                touchX = touch.clientX;
+                touchY = touch.clientY;
+            }, {passive: true});
+
+            piece.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                if (!clone && (Math.abs(touch.clientX - touchX) > 10 || Math.abs(touch.clientY - touchY) > 10)) {
+                    clone = piece.cloneNode(true);
+                    clone.style.position = 'fixed';
+                    clone.style.zIndex = '1000';
+                    clone.style.opacity = '0.8';
+                    clone.style.pointerEvents = 'none';
+                    document.body.appendChild(clone);
+                    piece.classList.add('dragging');
+                }
+                if (clone) {
+                    clone.style.left = (touch.clientX - 30) + 'px';
+                    clone.style.top = (touch.clientY - 20) + 'px';
+                }
+            }, {passive: true});
+
+            piece.addEventListener('touchend', (e) => {
+                if (clone) {
+                    clone.remove();
+                    clone = null;
+                }
+                piece.classList.remove('dragging');
+                
+                const touch = e.changedTouches[0];
+                const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+                const dropZone = targetElement ? targetElement.closest('.answer-slot-area, .piece-pool-area') : null;
+
+                if (dropZone && parseInt(dropZone.dataset.qIndex) === qIndex) {
+                    const toType = dropZone.dataset.type;
+                    movePieceData(qIndex, containerType, itemIndex, wordObj.id, toType);
                 }
             });
 
-            // 間違えた問題がある場合、復習ボタンを表示
-            const reviewBtn = document.getElementById('review-btn');
-            if (incorrectList.length > 0) {
-                reviewBtn.style.display = 'inline-block';
-                reviewBtn.innerText = `間違えた問題のみ復習 (${incorrectList.length}問)`;
-                window.tempIncorrectList = incorrectList;
+            // 💡 スマホなどで「タップするだけでも移動させたい」場合の保険（ダブルタップやタップで往復）
+            piece.addEventListener('click', () => {
+                const toType = (containerType === 'answer') ? 'pool' : 'answer';
+                movePieceData(qIndex, containerType, itemIndex, wordObj.id, toType);
+            });
+
+            return piece;
+        }
+
+        // ドロップエリアの設定
+        function setupDropZone(zone, item) {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                try {
+                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    if (data.qIndex === activeScrambleList.indexOf(item)) {
+                        const toType = zone.dataset.type;
+                        movePieceData(data.qIndex, data.from, data.index, data.id, toType);
+                    }
+                } catch(err) {}
+            });
+        }
+
+        // ピースのデータ移動処理
+        function movePieceData(qIndex, fromType, itemIndex, pieceId, toType) {
+            const item = activeScrambleList[qIndex];
+            let movedObj = null;
+
+            if (fromType === 'answer') {
+                const foundIdx = item.userAnswer.findIndex(w => w.id === pieceId);
+                if (foundIdx !== -1) {
+                    movedObj = item.userAnswer.splice(foundIdx, 1)[0];
+                }
             } else {
-                reviewBtn.style.display = 'none';
-                if (activeWordList.length > 0 && correctCount === activeWordList.length) {
-                    alert("全問正解おめでとうございます！🎉素晴らしいです！");
+                const foundIdx = item.shuffled.findIndex(w => w.id === pieceId);
+                if (foundIdx !== -1) {
+                    movedObj = item.shuffled.splice(foundIdx, 1)[0];
+                }
+            }
+
+            if (movedObj) {
+                if (toType === 'answer') {
+                    item.userAnswer.push(movedObj);
+                } else {
+                    item.shuffled.push(movedObj);
+                }
+                renderScramble();
+            }
+        }
+
+        function checkAllAnswers() {
+            const reviewBtn = document.getElementById('review-btn');
+
+            if (currentMode === 'scramble') {
+                let incorrectList = [];
+                let correctCount = 0;
+
+                activeScrambleList.forEach((item, qIndex) => {
+                    const resultDiv = document.getElementById(`scramble-result-${qIndex}`);
+                    
+                    let userSentence = "";
+                    item.userAnswer.forEach((w, idx) => {
+                        let t = w.text;
+                        if (idx === 0) {
+                            t = t.charAt(0).toUpperCase() + t.slice(1);
+                        }
+                        
+                        if (t === "." || t === "?") {
+                            userSentence += t;
+                        } else {
+                            userSentence += (userSentence.length > 0 ? " " : "") + t;
+                        }
+                    });
+
+                    let correctSentence = "";
+                    item.words.forEach((w) => {
+                        if (w === "." || w === "?") {
+                            correctSentence += w;
+                        } else {
+                            correctSentence += (correctSentence.length > 0 ? " " : "") + w;
+                        }
+                    });
+
+                    if (userSentence === correctSentence) {
+                        resultDiv.className = 'scramble-result correct';
+                        resultDiv.innerText = "🎉 正解です！";
+                        correctCount++;
+                    } else {
+                        resultDiv.className = 'scramble-result incorrect';
+                        resultDiv.innerText = `❌ 不正解です（正解: ${correctSentence}）`;
+                        incorrectList.push(item);
+                    }
+                });
+
+                if (incorrectList.length > 0) {
+                    reviewBtn.style.display = 'inline-block';
+                    reviewBtn.innerText = `間違えた問題のみ復習する (${incorrectList.length}問)`;
+                    window.tempIncorrectScramble = incorrectList;
+                    window.isScrambleReview = true;
+                } else {
+                    reviewBtn.style.display = 'none';
+                    if (correctCount === activeScrambleList.length) {
+                        alert("全問正解です！お疲れ様でした！");
+                    }
+                }
+            } else if (currentMode === 'write') {
+                const inputs = document.querySelectorAll('.quiz-input');
+                let incorrectList = [];
+                let correctCount = 0;
+
+                inputs.forEach(input => {
+                    const userVal = input.value.trim().toLowerCase();
+                    const correctVal = input.dataset.answer.toLowerCase();
+                    const originalIndex = input.dataset.index;
+
+                    if (userVal === correctVal) {
+                        input.classList.remove('incorrect-input');
+                        input.classList.add('correct-input');
+                        correctCount++;
+                    } else {
+                        input.classList.remove('correct-input');
+                        input.classList.add('incorrect-input');
+                        input.placeholder = `正: ${input.dataset.answer}`;
+                        incorrectList.push(activeWordList[originalIndex]);
+                    }
+                });
+
+                if (incorrectList.length > 0) {
+                    reviewBtn.style.display = 'inline-block';
+                    reviewBtn.innerText = `間違えた単語のみ復習する (${incorrectList.length}問)`;
+                    window.tempIncorrectWord = incorrectList;
+                    window.isScrambleReview = false;
+                } else {
+                    reviewBtn.style.display = 'none';
+                    if (activeWordList.length > 0 && correctCount === activeWordList.length) {
+                        alert("全問正解です！お疲れ様でした！");
+                    }
                 }
             }
         }
 
-        // 間違えた問題のみ復習モードを開始
         function startReviewMode() {
-            if (window.tempIncorrectList && window.tempIncorrectList.length > 0) {
-                activeWordList = [...window.tempIncorrectList];
-                isReviewOnly = true;
-                document.getElementById('app-subtitle').innerText = "【復習モード】間違えた問題に再挑戦中！";
-                document.getElementById('review-btn').style.display = 'none';
+            const reviewBtn = document.getElementById('review-btn');
+            if (window.isScrambleReview && window.tempIncorrectScramble) {
+                activeScrambleList = JSON.parse(JSON.stringify(window.tempIncorrectScramble));
+                activeScrambleList.forEach(item => {
+                    item.shuffled = item.words.map((w, i) => ({ id: i, text: w }));
+                    for (let i = item.shuffled.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [item.shuffled[i], item.shuffled[j]] = [item.shuffled[j], item.shuffled[i]];
+                    }
+                    item.userAnswer = [];
+                });
+                reviewBtn.style.display = 'none';
+                renderScramble();
+            } else if (!window.isScrambleReview && window.tempIncorrectWord) {
+                activeWordList = [...window.tempIncorrectWord];
+                reviewBtn.style.display = 'none';
                 renderTable();
             }
         }
 
-        // リセットボタン
         function resetApp() {
-            activeWordList = [...wordList];
-            isReviewOnly = false;
-            document.getElementById('app-subtitle').innerText = "モードを選んでテストを開始してください。";
+            resetAppData();
             document.getElementById('review-btn').style.display = 'none';
-            renderTable();
+            if (currentMode === 'scramble') {
+                renderScramble();
+            } else {
+                renderTable();
+            }
         }
     </script>
 </body>
