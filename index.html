@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英語小テスト対策トレーニング</title>
+    <title>英語小テスト対策サイト</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -189,19 +189,18 @@
             border-radius: 4px;
         }
         
-        /* 💡 ドラッグ＆ドロップ用のエリアデザイン */
         .answer-slot-area, .piece-pool-area {
-            min-height: 48px;
+            min-height: 52px;
             border: 2px dashed #cbd5e1;
             background: #fff;
             border-radius: 6px;
             display: flex;
             align-items: center;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 8px;
             padding: 8px;
             margin-bottom: 10px;
-            transition: background 0.2s;
+            position: relative;
         }
         .answer-slot-area {
             border-color: var(--accent);
@@ -215,6 +214,8 @@
             background: #e2e8f0;
             color: #1e293b;
             padding: 8px 14px;
+            min-width: 24px;
+            text-align: center;
             border-radius: 6px;
             cursor: grab;
             font-size: 0.9rem;
@@ -222,13 +223,39 @@
             user-select: none;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border: 1px solid #cbd5e1;
-            touch-action: none; /* スマホでのスクロール干渉を防ぐ */
+            touch-action: none;
+            position: relative;
         }
         .word-piece:active {
             cursor: grabbing;
         }
         .word-piece.dragging {
             opacity: 0.4;
+        }
+        
+        /* 💡 ピースの左右に表示する挿入ガイド線の範囲・見た目を広げる */
+        .word-piece.drop-left::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: -4px;
+            bottom: -4px;
+            width: 6px;
+            background-color: var(--accent);
+            border-radius: 3px;
+            z-index: 10;
+        }
+
+        .word-piece.drop-right::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: -4px;
+            bottom: -4px;
+            width: 6px;
+            background-color: var(--accent);
+            border-radius: 3px;
+            z-index: 10;
         }
 
         .placeholder-text {
@@ -297,7 +324,7 @@
 <body>
 
     <div class="container">
-        <h1>英語小テスト対策トレーニング</h1>
+        <h1>英語小テスト対策サイト</h1>
         <div class="subtitle" id="app-subtitle">学習モードを選択し、演習を開始してください。</div>
 
         <div class="tabs">
@@ -395,7 +422,7 @@
                 tableContainer.style.display = 'none';
                 scrambleSection.style.display = 'block';
                 checkBtn.style.display = 'inline-block';
-                document.getElementById('mode-tip').innerText = "※ ピースをドラッグ＆ドロップして自由に並び替えてください。（先頭は自動大文字化）";
+                document.getElementById('mode-tip').innerText = "※ ピースの間のガイド線を頼りに並び替え！上の単語タップで下に戻せます";
                 document.getElementById('app-subtitle').innerText = "【並び替え問題対策】";
                 renderScramble();
             } else {
@@ -537,25 +564,18 @@
             });
         }
 
-        // 💡 ドラッグ可能なピース要素の生成（スマホのタッチ対応込み）
         function createPieceElement(wordObj, containerType, qIndex, itemIndex) {
             const piece = document.createElement('div');
             piece.className = 'word-piece';
             piece.draggable = true;
 
-            let displayText = wordObj.text;
-            if (containerType === 'answer' && itemIndex === 0) {
-                displayText = displayText.charAt(0).toUpperCase() + displayText.slice(1);
-            }
-            piece.innerText = displayText;
+            piece.innerText = wordObj.text;
 
-            // データの紐付け
             piece.dataset.qIndex = qIndex;
             piece.dataset.container = containerType;
             piece.dataset.index = itemIndex;
             piece.dataset.id = wordObj.id;
 
-            // PC用ドラッグイベント
             piece.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', JSON.stringify({
                     qIndex: qIndex,
@@ -568,9 +588,46 @@
 
             piece.addEventListener('dragend', () => {
                 piece.classList.remove('dragging');
+                document.querySelectorAll('.word-piece').forEach(p => {
+                    p.classList.remove('drop-left', 'drop-right');
+                });
             });
 
-            // スマホ・タブレット用タッチ移動対応（簡易ドラッグエミュレート）
+            // 💡 ピースの左右の判定範囲を広げてガイド線を表示
+            piece.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const rect = piece.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                
+                piece.classList.remove('drop-left', 'drop-right');
+                if (x < rect.width / 2) {
+                    piece.classList.add('drop-left');
+                } else {
+                    piece.classList.add('drop-right');
+                }
+            });
+
+            piece.addEventListener('dragleave', () => {
+                piece.classList.remove('drop-left', 'drop-right');
+            });
+
+            piece.addEventListener('drop', (e) => {
+                e.preventDefault();
+                piece.classList.remove('drop-left', 'drop-right');
+                try {
+                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    if (data.qIndex === qIndex) {
+                        const rect = piece.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        let targetIdx = itemIndex;
+                        if (x >= rect.width / 2) {
+                            targetIdx = itemIndex + 1;
+                        }
+                        reorderOrMovePiece(qIndex, data.from, data.id, containerType, targetIdx);
+                    }
+                } catch(err) {}
+            });
+
             let touchX = 0, touchY = 0, clone = null;
             piece.addEventListener('touchstart', (e) => {
                 const touch = e.touches[0];
@@ -604,24 +661,38 @@
                 
                 const touch = e.changedTouches[0];
                 const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-                const dropZone = targetElement ? targetElement.closest('.answer-slot-area, .piece-pool-area') : null;
+                if (!targetElement) return;
+
+                const targetPiece = targetElement.closest('.word-piece');
+                const dropZone = targetElement.closest('.answer-slot-area, .piece-pool-area');
 
                 if (dropZone && parseInt(dropZone.dataset.qIndex) === qIndex) {
                     const toType = dropZone.dataset.type;
-                    movePieceData(qIndex, containerType, itemIndex, wordObj.id, toType);
+                    if (targetPiece && parseInt(targetPiece.dataset.qIndex) === qIndex) {
+                        const rect = targetPiece.getBoundingClientRect();
+                        const x = touch.clientX - rect.left;
+                        let targetIdx = parseInt(targetPiece.dataset.index);
+                        if (x >= rect.width / 2) {
+                            targetIdx++;
+                        }
+                        reorderOrMovePiece(qIndex, containerType, wordObj.id, targetPiece.dataset.container, targetIdx);
+                    } else {
+                        movePieceData(qIndex, containerType, wordObj.id, toType);
+                    }
                 }
             });
 
-            // 💡 スマホなどで「タップするだけでも移動させたい」場合の保険（ダブルタップやタップで往復）
             piece.addEventListener('click', () => {
-                const toType = (containerType === 'answer') ? 'pool' : 'answer';
-                movePieceData(qIndex, containerType, itemIndex, wordObj.id, toType);
+                if (containerType === 'answer') {
+                    movePieceData(qIndex, 'answer', wordObj.id, 'pool');
+                } else {
+                    movePieceData(qIndex, 'pool', wordObj.id, 'answer');
+                }
             });
 
             return piece;
         }
 
-        // ドロップエリアの設定
         function setupDropZone(zone, item) {
             zone.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -633,27 +704,58 @@
                     const data = JSON.parse(e.dataTransfer.getData('text/plain'));
                     if (data.qIndex === activeScrambleList.indexOf(item)) {
                         const toType = zone.dataset.type;
-                        movePieceData(data.qIndex, data.from, data.index, data.id, toType);
+                        if (toType === 'answer' && data.from === 'pool') {
+                            movePieceData(data.qIndex, data.from, data.id, 'answer');
+                        } else if (toType === 'pool' && data.from === 'answer') {
+                            movePieceData(data.qIndex, data.from, data.id, 'pool');
+                        } else if (toType === 'answer' && data.from === 'answer') {
+                            // 回答欄の余白部分にドロップされた場合は最後尾に追加
+                            movePieceData(data.qIndex, data.from, data.id, 'answer');
+                        }
                     }
                 } catch(err) {}
             });
         }
 
-        // ピースのデータ移動処理
-        function movePieceData(qIndex, fromType, itemIndex, pieceId, toType) {
+        function reorderOrMovePiece(qIndex, fromType, pieceId, toType, targetIndex) {
             const item = activeScrambleList[qIndex];
             let movedObj = null;
 
             if (fromType === 'answer') {
                 const foundIdx = item.userAnswer.findIndex(w => w.id === pieceId);
-                if (foundIdx !== -1) {
-                    movedObj = item.userAnswer.splice(foundIdx, 1)[0];
-                }
+                if (foundIdx !== -1) movedObj = item.userAnswer.splice(foundIdx, 1)[0];
             } else {
                 const foundIdx = item.shuffled.findIndex(w => w.id === pieceId);
-                if (foundIdx !== -1) {
-                    movedObj = item.shuffled.splice(foundIdx, 1)[0];
+                if (foundIdx !== -1) movedObj = item.shuffled.splice(foundIdx, 1)[0];
+            }
+
+            if (!movedObj) return;
+
+            if (toType === 'answer') {
+                if (fromType === 'answer') {
+                    const originalIdx = item.userAnswer.findIndex(w => w.id === pieceId);
+                    if (originalIdx !== -1 && originalIdx < targetIndex) {
+                        targetIndex = Math.max(0, targetIndex - 1);
+                    }
                 }
+                item.userAnswer.splice(targetIndex, 0, movedObj);
+            } else {
+                item.shuffled.push(movedObj);
+            }
+
+            renderScramble();
+        }
+
+        function movePieceData(qIndex, fromType, pieceId, toType) {
+            const item = activeScrambleList[qIndex];
+            let movedObj = null;
+
+            if (fromType === 'answer') {
+                const foundIdx = item.userAnswer.findIndex(w => w.id === pieceId);
+                if (foundIdx !== -1) movedObj = item.userAnswer.splice(foundIdx, 1)[0];
+            } else {
+                const foundIdx = item.shuffled.findIndex(w => w.id === pieceId);
+                if (foundIdx !== -1) movedObj = item.shuffled.splice(foundIdx, 1)[0];
             }
 
             if (movedObj) {
@@ -677,12 +779,8 @@
                     const resultDiv = document.getElementById(`scramble-result-${qIndex}`);
                     
                     let userSentence = "";
-                    item.userAnswer.forEach((w, idx) => {
-                        let t = w.text;
-                        if (idx === 0) {
-                            t = t.charAt(0).toUpperCase() + t.slice(1);
-                        }
-                        
+                    item.userAnswer.forEach((w) => {
+                        let t = w.text.toLowerCase();
                         if (t === "." || t === "?") {
                             userSentence += t;
                         } else {
@@ -692,10 +790,24 @@
 
                     let correctSentence = "";
                     item.words.forEach((w) => {
-                        if (w === "." || w === "?") {
-                            correctSentence += w;
+                        let t = w.toLowerCase();
+                        if (t === "." || t === "?") {
+                            correctSentence += t;
                         } else {
-                            correctSentence += (correctSentence.length > 0 ? " " : "") + w;
+                            correctSentence += (correctSentence.length > 0 ? " " : "") + t;
+                        }
+                    });
+
+                    let displayCorrectSentence = "";
+                    item.words.forEach((w, idx) => {
+                        let t = w;
+                        if (idx === 0) {
+                            t = t.charAt(0).toUpperCase() + t.slice(1);
+                        }
+                        if (t === "." || t === "?") {
+                            displayCorrectSentence += t;
+                        } else {
+                            displayCorrectSentence += (displayCorrectSentence.length > 0 ? " " : "") + t;
                         }
                     });
 
@@ -705,7 +817,7 @@
                         correctCount++;
                     } else {
                         resultDiv.className = 'scramble-result incorrect';
-                        resultDiv.innerText = `❌ 不正解です（正解: ${correctSentence}）`;
+                        resultDiv.innerText = `❌ 不正解です（正解例: ${displayCorrectSentence}）`;
                         incorrectList.push(item);
                     }
                 });
